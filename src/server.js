@@ -1,15 +1,15 @@
 import express from 'express';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
-import App from './client/App';
-import Html from './client/Html';
+import App from './client/app';
+import Html from './client/html';
 
 const port = 3000;
 const server = express();
 
 server.get('/', (req, res) => {
     const body = renderToString(<App />);
-    const title = 'Server side Rendering with Styled Components';
+    const title = 'Server Side React';
 
     res.send(
         Html({
