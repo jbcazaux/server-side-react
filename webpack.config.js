@@ -1,29 +1,75 @@
 const webpack = require('webpack');
 const nodeExternals = require('webpack-node-externals');
+const HtmlWebPackPlugin = require('html-webpack-plugin');
 const path = require('path');
 
-module.exports = {
-    entry: './src/server.js',
-    output: {
-        path: path.resolve(__dirname, 'dist'),
-        filename: 'server.js',
-        publicPath: '/'
-    },
-    target: 'node',
-    externals: nodeExternals(),
-    plugins: [
-        new webpack.DefinePlugin({
-            'process.env': {
-                NODE_ENV: `'development'`
-            }
-        })
+const common = {
+    nodeEnv: new webpack.DefinePlugin({
+        'process.env': {
+            NODE_ENV: `'development'`
+        }
+    }),
+    path: path.resolve(__dirname, 'dist'),
+    publicPath: '/',
+    loaders: [
+        {
+            test: /\.js$/,
+            exclude: /node_modules/,
+            loader: 'babel-loader'
+        }
     ],
-    module: {
-        loaders: [
-            {
-                test: /\.js$/,
-                loader: 'babel-loader'
-            }
-        ]
-    }
+    resolve: {extensions: ['.js']}
 };
+
+module.exports = [
+    {
+        // client side rendering
+        target: 'web',
+        entry: {
+            client: './src/client/index.js'
+        },
+        output: {
+            path: common.path,
+            filename: '[name].js',
+            publicPath: common.publicPath
+        },
+        plugins: [
+            common.nodeEnv,
+            new HtmlWebPackPlugin({
+                template: './src/index.html',
+                filename: './index.html',
+                excludeChunks: ['server']
+            })
+        ],
+        resolve: common.resolve,
+        module: {
+            loaders: common.loaders
+        },
+        devServer: {
+            contentBase: common.path,
+            publicPath: common.publicPath,
+            open: true
+        },
+    },
+    {
+        // server side rendering
+        target: 'node',
+        entry: {
+            server: './src/server.js'
+        },
+        output: {
+            path: common.path,
+            filename: '[name].js',
+            publicPath: common.publicPath,
+            libraryTarget: 'commonjs2',
+        },
+        externals: [nodeExternals()],
+        plugins: [
+            common.nodeEnv
+        ],
+        resolve: common.resolve,
+        module: {
+            loaders: common.loaders
+        }
+    }
+];

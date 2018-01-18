@@ -6,6 +6,7 @@ const Html = ({ body, title }) => `
     </head>
     <body>
       <div id="root">${body}</div>
+      <script src="/public/client.js"></script>
     </body>
   </html>
 `;
