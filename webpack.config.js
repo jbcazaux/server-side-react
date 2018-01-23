@@ -45,10 +45,12 @@ module.exports = [
         module: {
             loaders: common.loaders
         },
+        devtool: 'source-map',
         devServer: {
             contentBase: common.path,
             publicPath: common.publicPath,
-            open: true
+            open: true,
+            historyApiFallback: true
         },
     },
     {
