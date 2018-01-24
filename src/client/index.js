@@ -7,7 +7,10 @@ import {applyMiddleware, createStore} from 'redux';
 import thunk from 'redux-thunk';
 import {Provider} from 'react-redux';
 
-const store = createStore(reducer, applyMiddleware(thunk));
+const preloadedState = window.__REDUX_STATE__ || {counter: 20};
+delete window.__REDUX_STATE__;
+
+const store = createStore(reducer, preloadedState, applyMiddleware(thunk));
 
 ReactDOM.hydrate((
     <Provider store={store}>

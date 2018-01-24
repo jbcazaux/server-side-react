@@ -4,6 +4,9 @@ import {renderToString} from 'react-dom/server';
 import {StaticRouter} from 'react-router-dom';
 import App from './client/app';
 import Html from './client/html';
+import {reducer} from './reducers';
+import { Provider } from 'react-redux'
+import { createStore } from 'redux'
 
 const port = 3000;
 const server = express();
@@ -12,11 +15,14 @@ server.use('/public', express.static('dist'));
 
 server.get('*', (req, res) => {
     const context = {};
+    const store = createStore(reducer, {counter: 1});
 
     const appWithRouter = (
-        <StaticRouter location={req.url} context={context}>
-            <App/>
-        </StaticRouter>
+        <Provider store={store}>
+            <StaticRouter location={req.url} context={context}>
+                <App/>
+            </StaticRouter>
+        </Provider>
     );
 
     if (context.url) {
@@ -29,7 +35,8 @@ server.get('*', (req, res) => {
 
     res.status(200).send(Html({
         body,
-        title
+        title,
+        reduxState: {counter: 100}
     }));
 });
 
