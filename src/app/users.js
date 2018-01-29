@@ -2,7 +2,7 @@ import React, {Fragment} from 'react';
 import {connect} from 'react-redux';
 import * as UsersActions from '../actions/users';
 import {bindActionCreators} from 'redux';
-import axios from 'axios';
+import axios from '../axios/axios';
 
 class Users extends React.Component {
 
@@ -11,10 +11,7 @@ class Users extends React.Component {
             this.props.setUsers(this.props.staticContext.users);
         } else {
             axios.get('http://localhost:3000/public/users.json')
-                .then(response => {
-                    console.log(response);
-                    return response.data;
-                })
+                .then(response => response.data)
                 .catch((e) => {
                     console.error('erreur server: ', e.response.status, e.response.statusText);
                     return [];

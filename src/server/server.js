@@ -7,12 +7,12 @@ import Html from './html';
 import {reducer} from '../reducers/index';
 import {Provider} from 'react-redux';
 import {createStore} from 'redux';
-import axios from 'axios';
+import axios, {port} from '../axios/axios';
 
-const port = 3000;
 const server = express();
+const favicon = require('serve-favicon');
 
-// Add headers
+server.use(favicon('./public/fav.ico'));
 server.use(function (req, res, next) {
 
     // Website you wish to allow to connect
@@ -55,8 +55,7 @@ const renderWithReduxState = (reduxState, location, context) => {
 };
 
 server.get('/users', (req, res) => {
-    console.log('users !!');
-    axios.get('http://localhost:3000/public/users.json')
+    axios.get('public/users.json')
         .then(response => response.data)
         .catch((e) => {
             console.error('erreur server: ', e.response.status, e.response.statusText);
