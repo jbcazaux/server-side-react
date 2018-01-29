@@ -2,9 +2,9 @@ import express from 'express';
 import React from 'react';
 import {renderToString} from 'react-dom/server';
 import {StaticRouter} from 'react-router-dom';
-import App from './client/app';
-import Html from './client/html';
-import {reducer} from './reducers';
+import App from '../app/app';
+import Html from './html';
+import {reducer} from '../reducers/index';
 import {Provider} from 'react-redux';
 import {createStore} from 'redux';
 import axios from 'axios';
@@ -55,11 +55,15 @@ const renderWithReduxState = (reduxState, location, context) => {
 };
 
 server.get('/users', (req, res) => {
+    console.log('users !!');
     axios.get('http://localhost:3000/public/users.json')
         .then(response => response.data)
-        .catch(() => [])
+        .catch((e) => {
+            console.error('erreur server: ', e.response.status, e.response.statusText);
+            return [];
+        })
         .then(users => {
-            const context = {};
+            const context = {users};
             const app = renderWithReduxState({counter: 1, users}, req.url, context);
 
             if (context.url) {

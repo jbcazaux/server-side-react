@@ -36,7 +36,7 @@ module.exports = [
         plugins: [
             common.nodeEnv,
             new HtmlWebPackPlugin({
-                template: './src/index.html',
+                template: './src/client/index.html',
                 filename: './index.html',
                 excludeChunks: ['server']
             })
@@ -57,7 +57,7 @@ module.exports = [
         // server side rendering
         target: 'node',
         entry: {
-            server: './src/server.js'
+            server: './src/server/server.js'
         },
         output: {
             path: common.path,

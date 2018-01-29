@@ -7,10 +7,20 @@ import axios from 'axios';
 class Users extends React.Component {
 
     componentWillMount() {
-        axios.get('http://localhost:3000/public/users.json')
-            .then(response => response.data)
-            .catch(() => [])
-            .then(users => this.props.setUsers(users));
+        if (this.props.staticContext && this.props.staticContext.users) {
+            this.props.setUsers(this.props.staticContext.users);
+        } else {
+            axios.get('http://localhost:3000/public/users.json')
+                .then(response => {
+                    console.log(response);
+                    return response.data;
+                })
+                .catch((e) => {
+                    console.error('erreur server: ', e.response.status, e.response.statusText);
+                    return [];
+                })
+                .then(users => this.props.setUsers(users));
+        }
     }
 
     render() {
