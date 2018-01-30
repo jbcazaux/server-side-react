@@ -7,7 +7,7 @@ import {applyMiddleware, createStore} from 'redux';
 import thunk from 'redux-thunk';
 import {Provider} from 'react-redux';
 
-const preloadedState = window.__REDUX_STATE__ || {counter: 20, users: []};
+const preloadedState = window.__REDUX_STATE__ || {counter: 0, users: []};
 delete window.__REDUX_STATE__;
 
 const store = createStore(reducer, preloadedState, applyMiddleware(thunk));
