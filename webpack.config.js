@@ -38,8 +38,7 @@ module.exports = [
             common.nodeEnv,
             new HtmlWebPackPlugin({
                 template: './src/client/index.html',
-                filename: './index.html',
-                excludeChunks: ['server']
+                filename: './index.html'
             })
         ],
         resolve: common.resolve,
