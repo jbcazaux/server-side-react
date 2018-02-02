@@ -1,8 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Counter from '../app/counter';
-
+import {BrowserRouter as Router} from 'react-router-dom';
+import App from '../app/app';
 
 ReactDOM.hydrate((
-    <Counter/>
+    <Router>
+        <App/>
+    </Router>
 ), document.getElementById('root'));
