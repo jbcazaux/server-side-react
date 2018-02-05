@@ -58,7 +58,11 @@ server.get('/users', (req, res) => {
 server.get('*', (req, res) => {
     const context = {};
     const app = renderWithReduxState({counter: 1}, req.url, context);
-
+    if (context.url) {
+        console.log('will redirect to ', context.url);
+        res.redirect(context.url);
+        return;
+    }
     res.status(200).send(app);
 });
 
