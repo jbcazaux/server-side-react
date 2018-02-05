@@ -1,21 +1,29 @@
 import React from 'react';
+import * as CounterActions from '../actions/counter';
+import {connect} from 'react-redux';
+import {bindActionCreators} from 'redux';
 
-export default class Counter extends React.Component {
+class Counter extends React.Component {
 
     constructor(props) {
         super(props);
-        this.state = {count: 0};
         this.handleClick = this.handleClick.bind(this);
     }
 
     handleClick() {
-        this.setState(prevState => ({count: prevState.count + 1}));
+        this.props.increment();
     }
 
     render() {
         return <div>
             <button onClick={this.handleClick}>Press me</button>
-            <div>compteur: {this.state.count}</div>
+            <div>compteur: {this.props.counter}</div>
         </div>;
     }
 }
+
+const mapStateToProps = (state) => ({ counter: state.counter });
+
+const mapActionCreatorsToProps = (dispatch) => bindActionCreators(CounterActions, dispatch);
+
+export default connect(mapStateToProps, mapActionCreatorsToProps)(Counter);
