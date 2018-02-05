@@ -1,6 +1,7 @@
 import React from 'react';
 import {Link, Route} from 'react-router-dom';
 import Counter from './counter';
+import Users from './users';
 
 class App extends React.Component {
     render() {
@@ -9,6 +10,7 @@ class App extends React.Component {
                 <li><Link to="/">Home</Link></li>
                 <li><Link to="/counter">Counter</Link></li>
                 <li><Link to="/about">About</Link></li>
+                <li><Link to="/users">Users</Link></li>
             </ul>
 
             <hr/>
@@ -16,6 +18,7 @@ class App extends React.Component {
             <Route exact path="/" component={Home}/>
             <Route path="/counter" component={Counter}/>
             <Route path="/about" component={About}/>
+            <Route path="/users" component={Users}/>
         </div>;
     }
 }

@@ -7,12 +7,19 @@ import Html from './html';
 import {reducer} from '../reducers/index';
 import {Provider} from 'react-redux';
 import {createStore} from 'redux';
+import {host, port} from '../api/axios';
+import {fetchUsers} from '../api/users';
 
 const server = express();
 const favicon = require('serve-favicon');
 
 server.use(favicon('./public/fav.ico'));
-server.use('/public', express.static('dist'));
+server.use(function (req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    next();
+});
+server.use('/public', express.static('dist'), express.static('public'));
 
 const renderWithReduxState = (reduxState, location, context) => {
     const store = createStore(reducer, reduxState);
@@ -34,12 +41,26 @@ const renderWithReduxState = (reduxState, location, context) => {
     });
 };
 
+server.get('/users', (req, res) => {
+    fetchUsers()
+        .catch((e) => {
+            console.error('error while fetching /users: ', e);
+            return [];
+        })
+        .then(users => {
+            const context = {users};
+            const app = renderWithReduxState({counter: 1, users}, req.url, context);
+            res.status(200).send(app);
+        })
+        .catch(e => res.status(500).send(e));
+});
+
 server.get('*', (req, res) => {
     const context = {};
-    const app = renderWithReduxState({counter: 10}, req.url, context);
+    const app = renderWithReduxState({counter: 1}, req.url, context);
+
     res.status(200).send(app);
 });
 
-const port = 3000;
 server.listen(port);
-console.log(`Serving at http://localhost:${port}`);
+console.log(`Serving at http://${host}:${port}`);
