@@ -78,3 +78,14 @@ Dans une véritable application SPA, on fera du routing et du redux, comme on l'
 L'initialisation du store nécessite souvent des chargements asynchrones (appels REST, base de données, ...), alors que la méthode renderToString est synchrone.
 Il va donc falloir attendre le retour des appels asynchrones avant d'appeler 'renderToString'.
 
+C'est la que plusieurs stratégies sont possibles. 
+Aucune n'est parfaite et il faudra surtout étudier sur quels parametres on veut etre le plus performant: premier affichage, utilisation de l'application, complexité du code, ...
+Chaque application est unique et n'a pas à charger les memes volumes de données pour chaque page, il faut donc adapter la stratégie à mettre en place à chaque fois.
+Par exemple faut il charger uniquement les données de la page, ou est-il préférable de charger l'ensemble du store quelle que soit la page demandée ?
+La première solution semble évidente, mais elle est aussi plus complexe à mettre en place. La 2ème solution permet de n'écrire la méthode de chargement du store initial qu'une seule fois. On préfèrera cette méthode pour la simplicité du code.
+ 
+Si l'on veut ne charger que les données nécessaires à la page (la route) demandée, il va falloir décrire pour chaque route une fonction de chargement des données.
+Là où l'on avait avec react-router v3 une gestion centralisée des routes, ce n'est plus le cas avec la V4. Le projet react-router-config propose donc de décrire les routes dans un fichier, avec pour chacune d entre elles, une méthode spécifique à appeler, par exemple pour initialiser les données.
+
+Je ne suis pas convaincu par cette façon de faire qui nécessite de maintenir la gestion des routes à 2 endroits différents, sans garantie (à part avec des nouveaux tests) que les 2 descriptions de route sont synchronisées.
+Même si ce n'est pas non plus parfait, je préfère définir les routes dans le fichier server.js ...
