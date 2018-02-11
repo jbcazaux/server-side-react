@@ -62,5 +62,19 @@ On peut relancer l'application afin de controler que tout fonctionne.
 
 ### Redux
 
-Beaucoup d'applications utilisent redux afin de gérer les données de l'application. Afin que le rendu s'opère correctement coté back, et surtout garder exactement le même code de composants pour le front et le back, il faut créer le store également coté back. Pas de difficulté particulière car la méthode à appeler (createStore) est la même.
-En revanche on peut optimiser... passer le store back au front...
+Beaucoup d'applications utilisent redux pour stocker les données de l'application.
+Que ce soit coté back ou coté front, la meme méthode 'createStore' est appelée. Dans les 2 cas, il faudra passer l'objet qui constitue les données du store.
+L'idée intéressante est de ne calculer cet état initial du store qu'une seule fois (coté back) et de passer cet état du back au front.
+
+(code html.js)
+
+Une fois l'état du store  calculé, il est très simple de le serialiser en json dans le fichier index.html servi au client. Celui ci n'aura plus qu'à relire le json pour le passer au 'createStore()';
+
+(code client/index.js)
+
+### Routing, Redux et asynchronisme
+
+Dans une véritable application SPA, on fera du routing et du redux, comme on l'a vu. 
+L'initialisation du store nécessite souvent des chargements asynchrones (appels REST, base de données, ...), alors que la méthode renderToString est synchrone.
+Il va donc falloir attendre le retour des appels asynchrones avant d'appeler 'renderToString'.
+
