@@ -91,20 +91,139 @@ On remarquera que pour le front le point d'entrée est le fichier client/index.j
 
 Afin de produire un rendu cote back il faut configurer et lancer un serveur web dans un process node.
 La premiere etape est donc de creer un fichier pour lancer express, afin qu il ecoute les requetes http, et serve le rendu html de l application.
-(code server.js)
-Rien de particulier a part l'import de la librairie serve-favicon qui permet de servir le fichier public/fav.ico en tant que facvicon.
+
+```javacript
+import express from 'express';
+import React from 'react';
+import {renderToString} from 'react-dom/server';
+import Html from './html';
+import Counter from '../app/counter';
+
+const server = express();
+const favicon = require('serve-favicon');
+
+server.use(favicon('./public/fav.ico'));
+server.use('/public', express.static('dist'));
+
+server.get('/', (req, res) => {
+    const body = renderToString(<Counter/>);
+    const title = 'Server Side React';
+
+    const app = Html({
+        body,
+        title
+    });
+    res.status(200).send(app);
+});
+
+const port = 3000;
+server.listen(port);
+console.log(`Serving at http://localhost:${port}`);
+```
+L'import de la librairie serve-favicon permet de servir le fichier public/fav.ico en tant que favicon.
 
 La partie importante est l'utilisation de la methode renderToString de react-dom qui permet de generer dans une string, le code html du composant passe en parametre, en general le composant racine de l application.
-Une fois le code html de l'application genere, il faut l'inclure dans une page html, avec les traditionnelles balises <html>, <head>, <body>, etc... 
-(code server.js)
-Et bien sur une balise pour charger le code JS de notre application, afin qu'elle soit presente sur le navigateur pour assurer un rendu dynamique (revenir au cas classique du rendering cote navigateur.)
-(code html.js)
+Une fois le code html de l'application genere, il faut l'inclure dans une page html, avec les traditionnelles balises <html>, <head>, <body>, etc... Et bien sur une balise pour charger le code JS de notre application, afin qu'elle soit presente sur le navigateur pour assurer un rendu dynamique (revenir au cas classique du rendering cote navigateur.)
+```javascript
+const Html = ({ body, title }) => `
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <title>${title}</title>
+    </head>
+    <body>
+      <div id="root">${body}</div>
+      <script src="/public/client.js"></script>
+    </body>
+  </html>
+`;
+
+export default Html;
+```
 
 Il faut ensuite configurer webpack pour qu'il génère également un fichier des sources pour le backend. Le point d'entrée est alors server/server.js. On notera que l'on peut exclure du bundle les différentes librairies utilisées, étant donnée qu'elles sont dans le répertoire /node_modules.
 Le cleanWebpackPlugin permet de supprimer le répertoire dist avant chaque nouveau build.
 Les sources sont transpilées de la même façon que pour le front, d'où l'extraction de certaines propriétés dans un objet 'common'.
-(code webpack.config.js)
+```javascript
+const webpack = require('webpack');
+const nodeExternals = require('webpack-node-externals');
+const HtmlWebPackPlugin = require('html-webpack-plugin');
+const CleanWebpackPlugin = require('clean-webpack-plugin');
+const path = require('path');
 
+const common = {
+    nodeEnv: new webpack.DefinePlugin({
+        'process.env': {
+            NODE_ENV: `'development'`
+        }
+    }),
+    path: path.resolve(__dirname, 'dist'),
+    publicPath: '/',
+    loaders: [
+        {
+            test: /\.js$/,
+            exclude: /node_modules/,
+            loader: 'babel-loader'
+        }
+    ],
+    resolve: {extensions: ['.js']}
+};
+
+module.exports = [
+    {
+        // client side rendering
+        target: 'web',
+        entry: {
+            client: './src/client/index.js'
+        },
+        output: {
+            path: common.path,
+            filename: '[name].js',
+            publicPath: common.publicPath
+        },
+        plugins: [
+            common.nodeEnv,
+            new HtmlWebPackPlugin({
+                template: './src/client/index.html',
+                filename: './index.html'
+            })
+        ],
+        resolve: common.resolve,
+        module: {
+            loaders: common.loaders
+        },
+        devtool: 'source-map',
+        devServer: {
+            contentBase: common.path,
+            publicPath: common.publicPath,
+            open: true,
+            historyApiFallback: true
+        },
+    },
+    {
+        // server side rendering
+        target: 'node',
+        entry: {
+            server: './src/server/server.js'
+        },
+        output: {
+            path: common.path,
+            filename: '[name].js',
+            publicPath: common.publicPath,
+            libraryTarget: 'commonjs2',
+        },
+        externals: [nodeExternals()],
+        plugins: [
+            common.nodeEnv,
+            new CleanWebpackPlugin(['dist'], {verbose: true}),
+        ],
+        resolve: common.resolve,
+        module: {
+            loaders: common.loaders
+        }
+    }
+];
+```
 Pour tester l'application, il suffit de lancer 'npm run s' ou 'yarn s' et ouvrir un navigateur sur localhost:3000. En affichant la source de la page, on constate biem que le html genere cote serveur est bien present. \o/
 Pour le mode client-side seulement, on peut lancer 'npm run start:dev' ou 'yarn start:dev'.
 ### Routing
@@ -114,15 +233,183 @@ Comme on a pu le voir, générer le rendu html des composants coté serveur est 
 Dans l'application nous allons donc ajouter un menu avec 3 liens, chacun des liens va charger un des composants. L'url doit refléter le composant actuellement afficher.
 Bien sûr, quand on demandera le rendu coté serveur, il faudra que le bon composant soit généré en html afin que le navigateur l'affiche, le temps que l'application react soit chargée. 
 Nous utilisons react-router de façon simpliste, avec 2 nouveaux composants ne faisant rien d'extraordinaire.
-(code app.js)
+```javascript
+import React from 'react';
+import {Link, Route} from 'react-router-dom';
+import Counter from './counter';
+
+class App extends React.Component {
+    render() {
+        return <div>
+            <ul>
+                <li><Link to="/">Home</Link></li>
+                <li><Link to="/counter">Counter</Link></li>
+                <li><Link to="/about">About</Link></li>
+            </ul>
+
+            <hr/>
+
+            <Route exact path="/" component={Home}/>
+            <Route path="/counter" component={Counter}/>
+            <Route path="/about" component={About}/>
+        </div>;
+    }
+}
+
+const Home = () => (
+    <div>
+        <h2>Home</h2>
+        Welcome !
+    </div>
+);
+
+const About = () => (
+    <div>
+        <h2>About</h2>
+        About this application...
+    </div>
+);
+
+export default App;
+```
 Si le code source des composants restera le même pour le front et pour le back, il y a cependant une différence au niveau du router à utiliser.
 Pour le front il faudra utiliser le BrowserRouter, et pour le back le StaticRouter.
 Nous allons profiter que pour le front ce soit le fichier client/index.js qui charge l'application et pour le front le fichier server/server.js (voir la conf webpack) pour encapsuler dans chacun de ces fichiers notre <App> qui elle est universelle (front et back).
-(code webpack.config.js)
-(code index.js)
+```javascript
+const webpack = require('webpack');
+const nodeExternals = require('webpack-node-externals');
+const HtmlWebPackPlugin = require('html-webpack-plugin');
+const CleanWebpackPlugin = require('clean-webpack-plugin');
+const path = require('path');
+
+const common = {
+    nodeEnv: new webpack.DefinePlugin({
+        'process.env': {
+            NODE_ENV: `'development'`
+        }
+    }),
+    path: path.resolve(__dirname, 'dist'),
+    publicPath: '/',
+    loaders: [
+        {
+            test: /\.js$/,
+            exclude: /node_modules/,
+            loader: 'babel-loader'
+        }
+    ],
+    resolve: {extensions: ['.js']}
+};
+
+module.exports = [
+    {
+        // client side rendering
+        target: 'web',
+        entry: {
+            client: './src/client/index.js'
+        },
+        output: {
+            path: common.path,
+            filename: '[name].js',
+            publicPath: common.publicPath
+        },
+        plugins: [
+            common.nodeEnv,
+            new HtmlWebPackPlugin({
+                template: './src/client/index.html',
+                filename: './index.html'
+            })
+        ],
+        resolve: common.resolve,
+        module: {
+            loaders: common.loaders
+        },
+        devtool: 'source-map',
+        devServer: {
+            contentBase: common.path,
+            publicPath: common.publicPath,
+            open: true,
+            historyApiFallback: true
+        },
+    },
+    {
+        // server side rendering
+        target: 'node',
+        entry: {
+            server: './src/server/server.js'
+        },
+        output: {
+            path: common.path,
+            filename: '[name].js',
+            publicPath: common.publicPath,
+            libraryTarget: 'commonjs2',
+        },
+        externals: [nodeExternals()],
+        plugins: [
+            common.nodeEnv,
+            new CleanWebpackPlugin(['dist'], {verbose: true}),
+        ],
+        resolve: common.resolve,
+        module: {
+            loaders: common.loaders
+        }
+    }
+];
+```
+```javascript
+import React from 'react';
+import ReactDOM from 'react-dom';
+import {BrowserRouter as Router} from 'react-router-dom';
+import App from '../app/app';
+
+ReactDOM.hydrate((
+    <Router>
+        <App/>
+    </Router>
+), document.getElementById('root'));
+```
 C'est donc surtout dans la génération de l'application coté back que nous allons avoir du travail. Tout d'abord il faut passer 2 paramètres au 'StaticRouter': l'url courante (location) et un objet qui permet de transporter des informations (context).
 Dans un premier temps, nous n'utiliserons pas le contexte, un objet vide suffira. L'url courante est simplement récupérée dans la requête envoyée à express.
-(code server.js)
+
+```javascript
+import express from 'express';
+import React from 'react';
+import {renderToString} from 'react-dom/server';
+import {StaticRouter} from 'react-router-dom';
+import App from '../app/app';
+import Html from './html';
+
+const server = express();
+const favicon = require('serve-favicon');
+
+server.use(favicon('./public/fav.ico'));
+server.use('/public', express.static('dist'));
+
+const renderToHtml = (location, context) => {
+    const appWithRouter = (
+        <StaticRouter location={location} context={context}>
+            <App/>
+        </StaticRouter>
+    );
+
+    const body = renderToString(appWithRouter);
+    const title = 'Server Side React';
+
+    return Html({
+        body,
+        title
+    });
+};
+
+server.get('*', (req, res) => {
+    const context = {};
+    const app = renderToHtml(req.url, context);
+    res.status(200).send(app);
+});
+
+const port = 3000;
+server.listen(port);
+console.log(`Serving at http://localhost:${port}`);
+```
 
 On peut relancer l'application afin de controler que tout fonctionne.
 
