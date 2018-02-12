@@ -14,12 +14,78 @@ Les differentes etapes d amelioration sont:
 ### Application de base
 
 Dans la version client-side only, l application est un simple composant, qui affiche le nombre de fois que l'on clique sur le bouton.
+```javascript
+import React from 'react';
 
-(gist counter)
+export default class Counter extends React.Component {
+
+    constructor(props) {
+        super(props);
+        this.state = {count: 0};
+        this.handleClick = this.handleClick.bind(this);
+    }
+
+    handleClick() {
+        this.setState(prevState => ({count: prevState.count + 1}));
+    }
+
+    render() {
+        return <div>
+            <button onClick={this.handleClick}>Press me</button>
+            <div>compteur: {this.state.count}</div>
+        </div>;
+    }
+}
+```
 C'est un composant classique qui gere son compteur de clics dans son state.
-(gist webpack)
-Rien d'extraordinaire non plus dans le fichier de conf webpack, on retrouve simplement la generation du fichier index.html, l appel a babel pour transpiler l es6 et le jsx en es5. Le dev-server est utilise pour le rechargement a chaud de l'appli lors de modification du code.
-On remarque simplement que pour le front le point d'entrée est le fichier client/index.js.
+
+
+```javacript
+const webpack = require('webpack');
+const HtmlWebPackPlugin = require('html-webpack-plugin');
+const path = require('path');
+
+module.exports = {
+        entry: {
+            client: './src/client/index.js'
+        },
+        output: {
+            path: path.resolve(__dirname, 'dist'),
+            filename: '[name].js', // => client.js
+            publicPath: '/'
+        },
+        plugins: [
+            new webpack.DefinePlugin({
+                'process.env': {
+                    NODE_ENV: `'development'`
+                }
+            }),
+            new HtmlWebPackPlugin({
+                template: './src/client/index.html',
+                filename: './index.html'
+            })
+        ],
+        resolve: {extensions: ['.js']},
+        module: {
+            loaders: [
+            {
+                test: /\.js$/,
+                exclude: /node_modules/,
+                loader: 'babel-loader'
+            }
+        ],
+        },
+        devtool: 'source-map',
+        devServer: {
+            contentBase: path.resolve(__dirname, 'dist'),
+            publicPath: '/',
+            open: true,
+            historyApiFallback: true
+        },
+    };
+```
+Rien d'extraordinaire non plus dans le fichier de conf webpack, on retrouve simplement la generation du fichier index.html, l appel a babel pour transpiler l'es6 et le jsx en es5. Le dev-server est utilise pour le rechargement a chaud de l'appli lors de modification du code.
+On remarquera que pour le front le point d'entrée est le fichier client/index.js.
 
 ### Server side rendering
 
