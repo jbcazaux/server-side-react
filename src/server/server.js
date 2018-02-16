@@ -7,7 +7,8 @@ import Html from './html';
 import {reducer} from '../reducers/index';
 import {Provider} from 'react-redux';
 import {createStore} from 'redux';
-import axios, {port} from '../axios/axios';
+import {host, port} from '../api/axios';
+import {fetchUsers} from '../api/users';
 
 const server = express();
 const favicon = require('serve-favicon');
@@ -41,10 +42,9 @@ const renderWithReduxState = (reduxState, location, context) => {
 };
 
 server.get('/users', (req, res) => {
-    axios.get('public/users.json')
-        .then(response => response.data)
+    fetchUsers()
         .catch((e) => {
-            console.error('erreur server: ', e.response.status, e.response.statusText);
+            console.error('error while fetching /users: ', e);
             return [];
         })
         .then(users => {
@@ -67,4 +67,4 @@ server.get('*', (req, res) => {
 });
 
 server.listen(port);
-console.log(`Serving at http://localhost:${port}`);
+console.log(`Serving at http://${host}:${port}`);

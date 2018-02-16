@@ -2,21 +2,14 @@ import React, {Fragment} from 'react';
 import {connect} from 'react-redux';
 import * as UsersActions from '../actions/users';
 import {bindActionCreators} from 'redux';
-import axios from '../axios/axios';
 
 class Users extends React.Component {
 
-    componentWillMount() {
+    componentDidMount() {
         if (this.props.staticContext && this.props.staticContext.users) {
             this.props.setUsers(this.props.staticContext.users);
         } else {
-            axios.get('http://localhost:3000/public/users.json')
-                .then(response => response.data)
-                .catch((e) => {
-                    console.error('erreur server: ', e.response.status, e.response.statusText);
-                    return [];
-                })
-                .then(users => this.props.setUsers(users));
+            this.props.loadUsers();
         }
     }
 
