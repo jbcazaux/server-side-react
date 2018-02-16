@@ -1,5 +1,7 @@
 # Server side react
 
+THIS IS A WORK IN PROGRESS !
+
 ### Du client au serveur
 
 L'idée est de partir d'une application classique et simple, qui ne fait le rendu que cote front, pour l'améliorer au fur et à mesure.
@@ -538,8 +540,7 @@ const renderWithReduxState = (reduxState, location, context) => {
 };
 
 /* Gestion de la route /users, qui nécessite un chargement asynchrone préalable
-pour afficher la page.
-*/
+pour afficher la page. */
 server.get('/users', (req, res) => {
     fetchUsers()
         .catch((e) => {
@@ -566,11 +567,111 @@ server.listen(port);
 console.log(`Serving at http://${host}:${port}`);
 ```
 
-On remarque bien que l'appel à la méthode renderWithReduxState et donc renderToString (qui est synchrone) n'est fait que lorsque les données ont fini d'être chargées.
+On remarque bien que l'appel à la méthode **renderWithReduxState** et donc **renderToString** (qui est synchrone) n'est fait que lorsque les données ont fini d'être chargées.
 
 Est-ce que cette méthode est efficace avec un grand nombre de routes à gérer ? Avec plusieurs appels à faire pour récupérer l'ensemble des données ? C'est à regarder suivant votre application. De toute façon utiliser react-router-config ne permettra pas de s'affranchir de la difficulté à récupérer des données.
 
+Pour l'explication du code, il faut juste noter que *fetchUsers* est une fonction qui fait un appel REST et renvoie les données sous forme d'une promesse. Axios étant configuré pour fonctionner coté front et back.
+
+```javascript
+import axios from './axios';
+
+export const fetchUsers = () =>
+    axios.get('public/users.json')
+        .then(response => response.data);
+```
 
 ### Redirection
 
-La redirection coté front
+La redirection coté front est nativement gérée par react-router. C'est pour la partie back qu'il y a un peu de configuration en plus. Tout se joue dans le fichier server.js.
+```javascript
+import express from 'express';
+import React from 'react';
+import {renderToString} from 'react-dom/server';
+import {StaticRouter} from 'react-router-dom';
+import App from '../app/app';
+import Html from './html';
+import {reducer} from '../reducers/index';
+import {Provider} from 'react-redux';
+import {createStore} from 'redux';
+import {host, port} from '../api/axios';
+import {fetchUsers} from '../api/users';
+
+const server = express();
+const favicon = require('serve-favicon');
+
+server.use(favicon('./public/fav.ico'));
+server.use(function (req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    next();
+});
+server.use('/public', express.static('dist'), express.static('public'));
+
+const renderWithReduxState = (reduxState, location, context) => {
+    const store = createStore(reducer, reduxState);
+    const appWithRouter = (
+        <Provider store={store}>
+            <StaticRouter location={location} context={context}>
+                <App/>
+            </StaticRouter>
+        </Provider>
+    );
+
+    const body = renderToString(appWithRouter);
+    const title = 'Server Side React';
+
+    return Html({
+        body,
+        title,
+        reduxState
+    });
+};
+
+server.get('/users', (req, res) => {
+    fetchUsers()
+        .catch((e) => {
+            console.error('error while fetching /users: ', e);
+            return [];
+        })
+        .then(users => {
+            const context = {users};
+            const app = renderWithReduxState({counter: 1, users}, req.url, context);
+            res.status(200).send(app);
+        })
+        .catch(e => res.status(500).send(e));
+});
+
+server.get('*', (req, res) => {
+    const context = {};
+    const app = renderWithReduxState({counter: 1}, req.url, context);
+    if (context.url) { // c'est la que tout se joue !
+        console.log('will redirect to ', context.url);
+        res.redirect(context.url);
+        return;
+    }
+    res.status(200).send(app);
+});
+
+server.listen(port);
+console.log(`Serving at http://${host}:${port}`);
+```
+Le composant &lt;Redirection&gt; modifie le context pour indiquer l'url de redirection. Il suffit de surveiller ce flag après la génération de l'application pour déclencher une redirection dans le réponse http.
+
+```javascript
+import React from 'react';
+import {Redirect, Route} from 'react-router-dom';
+
+const RedirectToCounter = () => (
+    <Route render={({staticContext}) => {
+        if (staticContext) {
+            staticContext.status = 302;
+        }
+        return <Redirect from="/redirection" to="/counter"/>;
+    }}/>
+);
+
+export default RedirectToCounter;
+```
+
+### Streaming
