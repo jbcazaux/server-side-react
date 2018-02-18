@@ -4,13 +4,22 @@ THIS IS A WORK IN PROGRESS !
 
 ### Du client au serveur
 
-L'idée est de partir d'une application classique et simple, qui ne fait le rendu que cote front, pour l'améliorer au fur et à mesure.
+L'idée est de partir d'une application classique et simple, qui ne fait le rendu que coté front, pour l'améliorer au fur et à mesure.
 Les différentes étapes d'amélioration sont:
 - faire un rendu coté serveur
 - mettre en place du routing avec react-router
-- ajouter redux a la stack et transférer le store du back au front
-- initialiser le store de facon asynchrone coté serveur
+- ajouter redux à la stack et transférer le store du back au front
+- initialiser le store de façon asynchrone coté serveur
 - créer une redirection
+
+TODO: schéma ssr.
+
+Le principal intérêt du *Server Side Rendering* est de proposer au client une page déjà complète dès le premier appel, là où d'ordinaire il faut
+attendre que le client télécharge l'ensemble des fichiers JS, interprète le code et fasse de nouveaux appels à des APIs pour enfin afficher la même page.
+
+Bien évidemment, il y a toujours besoin de télécharger et d'interpréter les fichiers JS sur le navigateur pour avoir une application dynamique. On ne va gagner
+du temps "que" sur le premier affichage.
+
 
 ### Application de base
 
@@ -91,7 +100,7 @@ On remarquera que pour le front le point d'entrée est le fichier *client/index.
 ### Server side rendering
 
 Afin de produire un rendu coté back il faut configurer et lancer un serveur web dans un process node.
-La première étape est donc de créer un fichier pour lancer *express*, afin qu'il écoute les requêtes http, et serve le rendu html del'application.
+La première étape est donc de créer un fichier pour lancer *express*, afin qu'il écoute les requêtes http, et serve le rendu html de l'application.
 
 ```javacript
 import express from 'express';
@@ -104,7 +113,7 @@ const server = express();
 const favicon = require('serve-favicon');
 
 server.use(favicon('./public/fav.ico')); // une magnifique favicon :)
-server.use('/public', express.static('dist')); // les resources statiques seront chargées depuis ce répertoire
+server.use('/public', express.static('dist')); // les ressources statiques seront chargées depuis ce répertoire.
 
 server.get('/', (req, res) => { // on matche uniquement l'url racine
     const body = renderToString(<Counter/>); // la méthode renderToString est la clé du SSR
@@ -123,8 +132,9 @@ console.log(`Serving at http://localhost:${port}`);
 ```
 L'import de la librairie serve-favicon permet de servir le fichier public/fav.ico en tant que favicon.
 
-La partie importante est l'utilisation de la methode **renderToString** de react-dom qui permet de générer dans une string, le code html du composant passé en paramètre. En général, c'est le composant racine de l'application.
-Une fois le code html de l'application généré, il faut l'inclure dans une page html, avec les traditionnelles balises &lt;html&gt;, &lt;head&gt;, &lt;body&gt;, etc... Et bien sûr une balise pour charger le code JS de notre application, afin qu'elle soit présente sur le navigateur pour assurer un rendu dynamique (revenir au cas classique du rendering coté navigateur.)
+La partie importante est l'utilisation de la méthode **renderToString** de react-dom qui permet de générer dans une string, le code html du composant passé en paramètre. En général, c'est le composant racine de l'application.
+Une fois le code html de l'application généré, il faut l'inclure dans une page html, avec les traditionnelles balises &lt;html&gt;, &lt;head&gt;, &lt;body&gt;, etc...
+Et bien sûr une balise pour charger le code JS de notre application, afin qu'elle soit présente sur le navigateur pour assurer un rendu dynamique (revenir au cas classique du rendering coté navigateur.)
 ```javascript
 const Html = ({ body, title }) => `
   <!DOCTYPE html>
@@ -142,10 +152,14 @@ const Html = ({ body, title }) => `
 export default Html;
 ```
 
-Il faut ensuite configurer webpack pour qu'il génère également un fichier des sources pour le backend. Le point d'entrée est alors server/server.js. On notera que l'on peut exclure du bundle les différentes librairies utilisées, étant donné qu'elles sont dans le répertoire /node_modules.
+Il faut ensuite configurer webpack pour qu'il génère également un fichier des sources pour le backend.
+Le point d'entrée est alors server/server.js.
+On notera que l'on peut exclure du bundle les différentes librairies utilisées, étant donné qu'elles sont dans le répertoire /node_modules.
 
 Le cleanWebpackPlugin permet de supprimer le répertoire dist avant chaque nouveau build.
+
 Les sources sont transpilées de la même façon que pour le front, d'où l'extraction de certaines propriétés dans un objet 'common'.
+
 ```javascript
 const webpack = require('webpack');
 const nodeExternals = require('webpack-node-externals');
@@ -281,7 +295,7 @@ Si le code source des composants restera le même pour le front et pour le back,
 Pour le front il faudra utiliser le **BrowserRouter**, et pour le back le **StaticRouter**.
 
 Nous allons profiter que les points d'entrée soient différents pour le front et le back: client/index.js et server/server.js (voir la conf webpack).
-Ces différents fichier encapsuleront notre &lt;App&gt;, qui elle est universelle (front et back), avec le router adequat.
+Ces différents fichiers encapsuleront notre &lt;App&gt;, qui elle est universelle (front et back), avec le router adéquat.
 
 ```javascript
 const webpack = require('webpack');
@@ -377,7 +391,8 @@ ReactDOM.hydrate((
 ), document.getElementById('root'));
 ```
 
-C'est donc surtout dans la génération de l'application coté back que nous allons avoir du travail. Tout d'abord il faut passer 2 paramètres au **StaticRouter**: l'url courante (*location*) et un objet qui permet de transporter des informations (*context*).
+C'est donc surtout dans la génération de l'application coté back que nous allons avoir du travail.
+Tout d'abord il faut passer 2 paramètres au **StaticRouter**: l'url courante (*location*) et un objet qui permet de transporter des informations (*context*).
 
 Dans un premier temps, nous n'utiliserons pas le *context*, un objet vide suffira. L'url courante est simplement récupérée dans la requête envoyée à *express*.
 
@@ -431,6 +446,8 @@ Que ce soit coté back ou coté front, la même méthode **createStore** est app
 
 L'idée intéressante est de ne calculer cet état initial du store qu'une seule fois (coté back) et de passer cet état du back au front.
 
+**Note**: Quand on parle de *store*, il faudrait en fait écrire *state du store redux*. En effet le store a un état et c'est cet état qui contient des données.
+
 ```javascript
 const Html = ({ body, title, reduxState }) => `
   <!DOCTYPE html>
@@ -440,7 +457,8 @@ const Html = ({ body, title, reduxState }) => `
     </head>
     <body>
       <div id="root">${body}</div>
-      <script>window.__REDUX_STATE__ = ${JSON.stringify(reduxState).replace(/</g, '\\u003c')}</script>
+      <script>window.__REDUX_STATE__ = ${JSON.stringify(reduxState).replace(/</g, '\\u003c')}</script> // on écrit le store dans une variable globale.
+      /* tout en escapant le code passé pour éviter de l'injection de code malveillant */
       <script src="/public/client.js"></script>
     </body>
   </html>
@@ -449,7 +467,8 @@ const Html = ({ body, title, reduxState }) => `
 export default Html;
 ```
 
-Une fois l'état du store calculé, il est très simple de le sérialiser en json dans le fichier index.html servi au client. Celui ci n'aura plus qu'à relire le json pour le passer au **createStore**;
+Une fois l'état du store calculé, il est très simple de le sérialiser en json dans le fichier index.html servi au client.
+Celui ci n'aura plus qu'à relire le json pour le passer à **createStore**.
 
 ```javascript
 import React from 'react';
@@ -460,8 +479,8 @@ import {reducer} from '../reducers/index';
 import {createStore} from 'redux';
 import {Provider} from 'react-redux';
 
-const preloadedState = window.__REDUX_STATE__ || {counter: 0};
-delete window.__REDUX_STATE__;
+const preloadedState = window.__REDUX_STATE__ || {counter: 0}; //soit le store a été placé dans window.__REDUX_STATE__, soit on l'initialise.
+delete window.__REDUX_STATE__; // on ne laisse pas trainer de variable 'globale'.
 
 const store = createStore(reducer, preloadedState);
 
@@ -474,26 +493,30 @@ ReactDOM.hydrate((
 ), document.getElementById('root'));
 ```
 
+Coté client, on s'attend à ce que quelqu'un ait placé le store dans la variable globale window.__REDUX_STATE__.
+
+Si l'application n'a pas été initialisée avec un back end SSR, la variable globale window.__REDUX_STATE__ ne contiendra rien.
+On peut tout de même initialiser le store avec des données (ici on donne une valeur à counter), mais on préfèrera le faire avec des valeurs par défaut dans les reducers redux.
+
 ### Routing, Redux et asynchronisme
 
 Dans une véritable application SPA, on fera du routing et du redux.
 L'initialisation du store nécessite souvent des chargements asynchrones (appels REST, requètes à une base de données, ...), alors que la méthode **renderToString** est synchrone.
-
 Il va donc falloir attendre le retour des appels asynchrones avant d'appeler **renderToString**.
 
-C'est la que plusieurs stratégies sont possibles. 
+C'est là que plusieurs stratégies sont possibles.
 Aucune n'est parfaite et il faudra surtout étudier sur quels paramètres on veut être le plus performant: premier affichage, utilisation de l'application, complexité du code, ...
 Chaque application est unique et n'a pas à charger les mêmes volumes de données pour chaque page, il faut donc adapter la stratégie à mettre en place à chaque fois.
 
 Par exemple faut-il charger uniquement les données de la page, ou est-il préférable de charger l'ensemble du store quelle que soit la page demandée ?
-
-La première solution semble évidente, mais elle est aussi plus complexe à mettre en place. La 2ème solution permet de n'écrire la méthode de chargement du store initial qu'une seule fois. On préfèrera cette méthode pour la simplicité du code.
+La première solution semble évidente, mais elle est aussi plus complexe à mettre en place. La 2ème solution permet de n'écrire la méthode de chargement du store initial qu'une seule fois. On préfèrera alors cette méthode pour la simplicité du code.
 
 Si l'on veut ne charger que les données nécessaires à la page (la route) demandée, il va falloir décrire pour chaque route une fonction de chargement des données.
-Là où l'on avait avec react-router v3 une gestion centralisée des routes, ce n'est plus le cas avec la v4. Le projet react-router-config propose donc de décrire les routes dans un fichier, avec pour chacune d'entre elles, une méthode spécifique d'initialisation, par exemple pour charger des données.
+Là où l'on avait avec react-router v3 une gestion centralisée des routes, ce n'est plus le cas avec la v4.
+Le projet react-router-config propose donc de décrire les routes dans un fichier, avec pour chacune d'entre elles, une méthode spécifique d'initialisation, par exemple pour charger des données.
 
 Je ne suis pas convaincu par cette façon de faire qui nécessite de maintenir la gestion des routes à deux endroits différents, sans garantie (à part avec des nouveaux tests) que les deux descriptions de route sont synchronisées.
-Même si ce n'est pas non plus parfait, je préfère définir les routes dans le fichier server.js.
+Même si ce n'est pas non plus parfait, je préfère déclarer les routes dans le fichier server.js et appeler pour chacune d'elle une méthode d'initialisation du store.
 
 ```javascript
 import express from 'express';
@@ -519,6 +542,7 @@ server.use(function (req, res, next) { // configuration du CORS
 });
 server.use('/public', express.static('dist'), express.static('public'));
 
+/* Méthode synchrone qui va générer la page demandée (location) avec le state du store passé en paramètre. */
 const renderWithReduxState = (reduxState, location, context) => {
     const store = createStore(reducer, reduxState);
     const appWithRouter = (
@@ -542,12 +566,12 @@ const renderWithReduxState = (reduxState, location, context) => {
 /* Gestion de la route /users, qui nécessite un chargement asynchrone préalable
 pour afficher la page. */
 server.get('/users', (req, res) => {
-    fetchUsers()
+    fetchUsers() // appel asynchrone à une API
         .catch((e) => {
             console.error('error while fetching /users: ', e);
             return [];
         })
-        .then(users => {
+        .then(users => { // quand la réponse arrive, on peut demander le rendu de la page de l'application.
             const context = {users};
             const app = renderWithReduxState({counter: 1, users}, req.url, context);
             res.status(200).send(app);
@@ -567,16 +591,19 @@ server.listen(port);
 console.log(`Serving at http://${host}:${port}`);
 ```
 
-On remarque bien que l'appel à la méthode **renderWithReduxState** et donc **renderToString** (qui est synchrone) n'est fait que lorsque les données ont fini d'être chargées.
+On remarque bien que l'appel à la méthode **renderWithReduxState** et donc **renderToString** (qui est synchrone) n'est fait que lorsque les données ont fini d'être chargées (dans le retour de la promesse).
 
-Est-ce que cette méthode est efficace avec un grand nombre de routes à gérer ? Avec plusieurs appels à faire pour récupérer l'ensemble des données ? C'est à regarder suivant votre application. De toute façon utiliser react-router-config ne permettra pas de s'affranchir de la difficulté à récupérer des données.
+Est-ce que cette méthode est efficace avec un grand nombre de routes à gérer (cela impliquerait beaucoup d'entrées dans le server.js) ?
+Avec plusieurs appels à faire pour récupérer l'ensemble des données ? C'est à regarder suivant votre application.
+De toute façon utiliser react-router-config ne permettra pas de s'affranchir de la difficulté à récupérer des données.
 
-Pour l'explication du code, il faut juste noter que *fetchUsers* est une fonction qui fait un appel REST et renvoie les données sous forme d'une promesse. Axios étant configuré pour fonctionner coté front et back.
+Pour l'explication du code, il faut juste noter que *fetchUsers* est une fonction qui fait un appel REST et renvoie les données sous forme d'une promesse.
+Axios étant configuré pour fonctionner coté front et back.
 
 ```javascript
 import axios from './axios';
 
-export const fetchUsers = () =>
+export const fetchUsers = () => // appel à API permettant de récupérer des données
     axios.get('public/users.json')
         .then(response => response.data);
 ```
@@ -674,4 +701,17 @@ const RedirectToCounter = () => (
 export default RedirectToCounter;
 ```
 
-### Streaming
+### Limitations
+
+Si le *Server Side Rendering* permet de raccourcir le temps du premier affichage sur le client, la méthode n'est pas encore parfaite.
+Le back end, plutôt que de renvoyer très rapidement un fichier html contenant les fichiers JS à télécharger, va devoir passer du temps à générer le html.
+Cette génération va prendre plus ou moins de temps suivant le nombre d'appels asynchrones à des ressources.
+
+La première stratégie peut donc, dans la mesure du possible, cacher des requêtes. L'idéal étant sans doute de mettre en cache le html généré (le résultat de *renderToString*) pour chaque route.
+Et si ce n'est pas possible (par exemple dans le cas de page qui dépendent de l'utilisateur connecté), il est peut-être possible de cacher les résultats des appels aux APIs.
+
+Il existe encore une voie possible d'amélioration, forcément encore un peu plus complexe à mettre en place. Cela consiste à faire du **streaming html**.
+
+### Html Streaming
+
+...
