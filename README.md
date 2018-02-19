@@ -49,7 +49,7 @@ export default class Counter extends React.Component {
 ```
 C'est un composant classique qui gère son compteur de clics dans son state.
 
-```javacript
+```javascript
 const webpack = require('webpack');
 const HtmlWebPackPlugin = require('html-webpack-plugin');
 const path = require('path');
@@ -102,7 +102,7 @@ On remarquera que pour le front le point d'entrée est le fichier *client/index.
 Afin de produire un rendu coté back il faut configurer et lancer un serveur web dans un process node.
 La première étape est donc de créer un fichier pour lancer *express*, afin qu'il écoute les requêtes http, et serve le rendu html de l'application.
 
-```javacript
+```javascript
 import express from 'express';
 import React from 'react';
 import {renderToString} from 'react-dom/server';
