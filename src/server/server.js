@@ -13,6 +13,7 @@ import {fetchUsers} from '../api/users';
 import routes from '../app/routes';
 import { matchRoutes } from 'react-router-config'
 import '../global/promise';
+import {_} from 'lodash'
 
 const server = express();
 const favicon = require('serve-favicon');
@@ -45,64 +46,17 @@ const renderWithReduxState = (reduxState, location, context) => {
     });
 };
 
-/*const addRoutesToExpress = (routeList, parents=[])=>{
-  routeList.forEach((route)=>{
-    console.log('------');
-    console.log(route);
-    console.log(parents);
-      if(route.routes) {
-        addRoutesToExpress(route.routes, [...parents, route]);
-      } else {
-          let routePath = ``;
-          parents.forEach((parentRoute)=>{
-            if(parentRoute.path) {
-              routePath += parentRoute.path
-            }
-          });
-
-          if(route.path) {
-            routePath += route.path
-          }
-
-          console.log('add route to Xprs: ', routePath);
-
-          server.get(routePath, (req, res) => {
-              res.send(req.url)
-          });
-      }
-  })
-};
-
-addRoutesToExpress(routes);*/
-
 const loadBranchData = (location) => {
-  const branch = matchRoutes(routes, location);
+  const promises = matchRoutes(routes, location)
+    .map(({ route, match }) => route.loadData && Promise.allValues(route.loadData))
+    .filter((element) => !!element);
 
-  const promises = branch.map(({ route, match }) => {
-    return route.loadData
-      ? Promise.allValues(route.loadData)
-      : undefined
-  }).filter((element) => !!element);
-
-  console.log('promises', promises);
-
-  return Promise.all(promises).then((promisesResults)=>{
-
-    console.log('promisesResults', promisesResults);
-    let toReturn = {};
-
-    promisesResults.forEach((childResult) => {
-      toReturn = {...toReturn, ...childResult}
-    });
-    return toReturn;
-  })
+  return Promise.all(promises).then((promisesResults) => _.assign(...promisesResults))
 };
 
 server.get('*', (req, res) => {
   // useful on the server for preloading data
   loadBranchData(req.url).then(data => {
-    console.log('DATA:', data);
-
     const context = {};
     const app = renderWithReduxState(data, req.url, context);
 
