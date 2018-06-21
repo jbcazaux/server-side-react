@@ -10,6 +10,10 @@ import {createStore} from 'redux';
 import {host, port} from '../api/axios';
 import {fetchUsers} from '../api/users';
 
+import routes from '../app/routes';
+import { matchRoutes } from 'react-router-config'
+import '../global/promise';
+
 const server = express();
 const favicon = require('serve-favicon');
 
@@ -41,25 +45,69 @@ const renderWithReduxState = (reduxState, location, context) => {
     });
 };
 
-server.get('/users', (req, res) => {
-    fetchUsers()
-        .catch((e) => {
-            console.error('error while fetching /users: ', e);
-            return [];
-        })
-        .then(users => {
-            const context = {users};
-            const app = renderWithReduxState({counter: 1, users}, req.url, context);
-            res.status(200).send(app);
-        })
-        .catch(e => res.status(500).send(e));
-});
+/*const addRoutesToExpress = (routeList, parents=[])=>{
+  routeList.forEach((route)=>{
+    console.log('------');
+    console.log(route);
+    console.log(parents);
+      if(route.routes) {
+        addRoutesToExpress(route.routes, [...parents, route]);
+      } else {
+          let routePath = ``;
+          parents.forEach((parentRoute)=>{
+            if(parentRoute.path) {
+              routePath += parentRoute.path
+            }
+          });
+
+          if(route.path) {
+            routePath += route.path
+          }
+
+          console.log('add route to Xprs: ', routePath);
+
+          server.get(routePath, (req, res) => {
+              res.send(req.url)
+          });
+      }
+  })
+};
+
+addRoutesToExpress(routes);*/
+
+const loadBranchData = (location) => {
+  const branch = matchRoutes(routes, location);
+
+  const promises = branch.map(({ route, match }) => {
+    return route.loadData
+      ? Promise.allValues(route.loadData)
+      : undefined
+  }).filter((element) => !!element);
+
+  console.log('promises', promises);
+
+  return Promise.all(promises).then((promisesResults)=>{
+
+    console.log('promisesResults', promisesResults);
+    let toReturn = {};
+
+    promisesResults.forEach((childResult) => {
+      toReturn = {...toReturn, ...childResult}
+    });
+    return toReturn;
+  })
+};
 
 server.get('*', (req, res) => {
+  // useful on the server for preloading data
+  loadBranchData(req.url).then(data => {
+    console.log('DATA:', data);
+
     const context = {};
-    const app = renderWithReduxState({counter: 1}, req.url, context);
+    const app = renderWithReduxState(data, req.url, context);
 
     res.status(200).send(app);
+  });
 });
 
 server.listen(port);
