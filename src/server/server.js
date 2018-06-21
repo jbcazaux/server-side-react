@@ -10,6 +10,11 @@ import {createStore} from 'redux';
 import {host, port} from '../api/axios';
 import {fetchUsers} from '../api/users';
 
+import routes from '../app/routes';
+import { matchRoutes } from 'react-router-config'
+import '../global/promise';
+import {_} from 'lodash'
+
 const server = express();
 const favicon = require('serve-favicon');
 
@@ -41,25 +46,22 @@ const renderWithReduxState = (reduxState, location, context) => {
     });
 };
 
-server.get('/users', (req, res) => {
-    fetchUsers()
-        .catch((e) => {
-            console.error('error while fetching /users: ', e);
-            return [];
-        })
-        .then(users => {
-            const context = {users};
-            const app = renderWithReduxState({counter: 1, users}, req.url, context);
-            res.status(200).send(app);
-        })
-        .catch(e => res.status(500).send(e));
-});
+const loadBranchData = (location) => {
+  const promises = matchRoutes(routes, location)
+    .map(({ route, match }) => route.loadData && Promise.allValues(route.loadData))
+    .filter((element) => !!element);
+
+  return Promise.all(promises).then((promisesResults) => _.assign(...promisesResults))
+};
 
 server.get('*', (req, res) => {
+  // useful on the server for preloading data
+  loadBranchData(req.url).then(data => {
     const context = {};
-    const app = renderWithReduxState({counter: 1}, req.url, context);
+    const app = renderWithReduxState(data, req.url, context);
 
     res.status(200).send(app);
+  });
 });
 
 server.listen(port);

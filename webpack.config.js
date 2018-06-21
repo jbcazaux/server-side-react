@@ -57,7 +57,7 @@ module.exports = [
         // server side rendering
         target: 'node',
         entry: {
-            server: './src/server/server.js'
+            server: ['babel-polyfill', './src/server/server.js']
         },
         output: {
             path: common.path,
