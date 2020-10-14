@@ -17,7 +17,12 @@ class App extends React.Component {
 
             <hr/>
 
-            <Route exact path="/" component={Home}/>
+            <Route exact path="/" render={() => (
+                <div>
+                    <h2>Home</h2>
+                    Welcome !
+                </div>
+            )}/>
             <Route path="/counter" component={Counter}/>
             <Route path="/about" component={About}/>
             <Route path="/users" component={Users}/>

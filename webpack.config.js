@@ -1,7 +1,7 @@
 const webpack = require('webpack');
-const nodeExternals = require('webpack-node-externals');
-const HtmlWebPackPlugin = require('html-webpack-plugin');
-const CleanWebpackPlugin = require('clean-webpack-plugin');
+const nodeExternals = require('webpack-node-externals')
+const HtmlWebPackPlugin = require('html-webpack-plugin')
+const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 const path = require('path');
 
 const common = {
@@ -12,7 +12,7 @@ const common = {
     }),
     path: path.resolve(__dirname, 'dist'),
     publicPath: '/',
-    loaders: [
+    rules: [
         {
             test: /\.js$/,
             exclude: /node_modules/,
@@ -20,7 +20,51 @@ const common = {
         }
     ],
     resolve: {extensions: ['.js']}
-};
+}
+
+
+module.exports = (env, argv = {}) => [{
+    target: 'web',
+    entry: {
+        client: './src/client/index.js',
+    },
+    output: {
+        path: common.path,
+        filename: '[name].js',
+        publicPath: common.publicPath
+    },
+    plugins: [
+        new HtmlWebPackPlugin({
+            template: './src/client/index.html',
+            filename: './index.html'
+        }),
+        new CleanWebpackPlugin({ verbose: true }),
+    ],
+    resolve: { extensions: ['.js'] },
+    module: {
+        rules: common.rules,
+    },
+    devtool: argv.mode === 'development' ? 'source-map' : false,
+    devServer: {
+        contentBase: common.path,
+        publicPath: common.publicPath,
+        open: true,
+        historyApiFallback: true,
+    },
+},
+    {
+        target: 'node',
+        entry: {
+            server: './src/server/server.js'
+        },
+        output: {
+            path: common.path,
+            filename: '[name].js',
+            publicPath: common.publicPath,
+            libraryTarget: 'commonjs2',
+        },
+        externals: [nodeExternals()],
+    }]
 
 module.exports = [
     {
@@ -68,7 +112,6 @@ module.exports = [
         externals: [nodeExternals()],
         plugins: [
             common.nodeEnv,
-            new CleanWebpackPlugin(['dist'], {verbose: true}),
         ],
         resolve: common.resolve,
         module: {
