@@ -6,10 +6,11 @@
   "author": "jbcazaux",
   "license": "MIT",
   "scripts": {
-    "start:dev": "webpack-dev-server",
+    "start:dev": "webpack-dev-server --mode development",
     "start": "node ./dist/server",
-    "s": "npm build && npm start",
-    "build": "webpack",
+    "s": "npm run buildback && npm start",
+    "build": "webpack --mode development",
+    "buildback": "webpack --mode development --config webpack.config-back.js",
     "ncuu": "ncu -u"
   },
   "devDependencies": {
